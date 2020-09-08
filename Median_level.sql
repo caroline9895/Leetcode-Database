@@ -18,3 +18,16 @@ SELECT score,
        DENSE_RANK()
        OVER (ORDER BY score DESC) AS 'Rank'
 FROM Scores
+
+
+-- 185. Department Top Three Salaries
+
+SELECT Department, Employee, Salary
+FROM (
+    SELECT Department.Name AS Department, 
+       Employee.Name AS Employee, 
+       Salary,
+       DENSE_RANK() OVER (PARTITION BY DepartmentId ORDER BY Salary DESC) AS SRank
+    FROM Employee JOIN Department ON (Employee.DepartmentId=Department.Id)
+) t1
+WHERE SRank<=3 
