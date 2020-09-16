@@ -32,6 +32,7 @@ FROM (
 ) t1
 WHERE SRank<=3 
 
+
 --1270. All People Report to the Given Manager
 
 SELECT a.employee_id
@@ -49,6 +50,7 @@ from seat s1 left join seat s2 on (case when s1.id % 2 = 1
                                         else s1.id-1 end) = s2.id 
 order by s1.id;
 
+
 --180. Consecutive Numbers
 
 SELECT DISTINCT L1.Num As ConsecutiveNums
@@ -56,6 +58,7 @@ FROM Logs  L1 JOIN Logs L2 ON L1.Id=L2.Id+1
               Join Logs L3 ON L2.Id=L3.Id+1
 WHERE L1.Num=L2.Num
 AND L1.Num=L3.Num
+
 
 --1132. Reported Posts II
 
@@ -69,6 +72,7 @@ WITH A AS(
 )
 SELECT ROUND(AVG(Re/Sp)*100, 2) average_daily_percent
 FROM A 
+
 
 --1098. Unpopular Books
 
@@ -84,6 +88,7 @@ WHERE DATEDIFF("2019-06-23", available_from)>31
 GROUP BY Books.book_id
 Having SUM(ifnull(quantity,0))<10
 
+                  
 --1355. Activity Participants
 
 WITH t AS (
@@ -96,6 +101,7 @@ FROM t
 WHERE Num < (SELECT Max(Num) FROM t)
   AND Num > (SELECT Min(Num) FROM t)
 
+                  
 --1393. Capital Gain/Loss
 
 ---method 1
