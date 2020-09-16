@@ -16,6 +16,7 @@ SELECT Day,
        ROUND(Cancelled/Num, 2) AS 'Cancellation Rate'
 FROM T1
 
+
 --615. Average Salary: Departments VS Company
 
 WITH com as
@@ -41,6 +42,7 @@ SELECT dep.pay_month AS pay_month,
 FROM dep LEFT JOIN com ON (com.pay_month=dep.pay_month)
 ORDER BY   dep.department_id ASC, dep.pay_month ASC
 
+
 --1336. Number of Transactions per Visit
 
 with t1 as (
@@ -61,6 +63,7 @@ select r.num transactions_count,
 from row_num r left join t1 t on r.num=t.transactions_count 
 group by r.num order by transactions_count;
 
+
 --601. Human Traffic of Stadium
 
 SELECT id,visit_date,people 
@@ -75,6 +78,7 @@ WHERE (people>=100 and ld1>=100 and ld2>=100)
         OR (people>=100 and ld1>=100 and lg1>=100 ) 
         OR (people>=100 and lg1>=100 and lg2>=100)
 
+
 --184. Department Highest Salary
 
 SELECT Department, Employee, Salary
@@ -84,7 +88,8 @@ FROM (SELECT Department.Name as Department,
              RANK()OVER(PARTITION BY Employee.DepartmentId ORDER BY Salary DESC) as k
         FROM Employee JOIN Department ON (Employee.DepartmentId=Department.Id) a
  WHERE k=1
-  
+
+      
 --1127. User Purchase Platform
 
 WITH res AS (
@@ -105,6 +110,7 @@ SELECT comb.spend_date, comb.platform,
 FROM comb LEFT JOIN res ON comb.spend_date = res.spend_date AND comb.platform = res.platform
 GROUP BY spend_date, platform;
 
+      
 --569. Median Employee Salary
 ## The solution is a little weird
 
@@ -126,6 +132,7 @@ FROM T2
 WHERE median=1
 GROUP BY Company, Salary
 
+      
 --1384. Total Sales Amount by Year
 
 WITH YS AS(
