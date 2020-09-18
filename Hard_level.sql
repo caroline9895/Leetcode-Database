@@ -154,5 +154,71 @@ and YS.product_id = P.product_id
 order by YS.product_id, report_year
 
 
+--1412. Find the Quiet Students in All Exams
+
+With t2 AS(
+    SELECT DISTINCT student_id
+    FROM (
+        SELECT *,
+            RANK() OVER(PARTITION BY exam_id ORDER BY score DESC) AS Mx,
+            RANK() OVER(PARTITION BY exam_id ORDER BY score ASC) AS Mn
+        FROM Exam
+    ) t1
+    WHERE t1.Mx = 1
+    OR t1.Mn =1
+)
+SELECT DISTINCT Exam.student_id AS student_id, student_name
+FROM Exam LEFT JOIN Student ON Exam.student_id = Student.student_id
+          LEFT JOIN t2 ON Exam.student_id=t2.student_id
+WHERE t2.student_id IS NULL
+
+
+--1479. Sales by Day of the Week
+
+WITH t1 AS(
+    SELECT item_category as Category,
+        DAYNAME(order_date) AS Weekday,
+        IFNULL(SUM(quantity),0) AS quantity
+    FROM Items a LEFT JOIN Orders b ON a.item_id=b.item_id
+    GROUP BY Category, Weekday
+)
+SELECT Category,
+       SUM(Case when Weekday='Monday' THEN quantity ELSE 0 END) AS Monday,
+       SUM(Case when Weekday='Tuesday' THEN quantity ELSE 0 END) AS Tuesday, 
+       SUM(Case when Weekday='Wednesday' THEN quantity ELSE 0 END) AS Wednesday, 
+       SUM(Case when Weekday='Thursday' THEN quantity ELSE 0 END) AS Thursday, 
+       SUM(Case when Weekday='Friday' THEN quantity ELSE 0 END) AS Friday, 
+       SUM(Case when Weekday='Saturday' THEN quantity ELSE 0 END) AS Saturday,
+
+
+--1225. Report Contiguous Dates
+
+select 'failed' as period_state,
+       min(fail_date) as start_date,
+       max(fail_date) as end_date
+from (
+    select fail_date,
+           dayofyear(fail_date) - row_number() over(order by fail_date) as group_rank
+    from Failed
+    where fail_date between '2019-01-01' and '2019-12-31'
+) f
+group by group_rank
+
+union
+
+select 'succeeded' as period_state,
+       min(success_date) as start_date,
+       max(success_date) as end_date
+from (
+    select success_date,
+           dayofyear(success_date) - row_number() over(order by success_date) as group_rank
+    from Succeeded
+    where success_date between '2019-01-01' and '2019-12-31'
+) s
+group by group_rank
+
+order by start_date  
+
+
 
 
