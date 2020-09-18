@@ -150,3 +150,205 @@ from (select distinct *,
         from logins) a
     group by 1,2, (date_add(a.login_date, interval -row_num day))
 having count(a.login_date)>=5
+
+                        
+--1398. Customers Who Bought Products A and B but Not C
+
+## Method1
+WITH T1 AS (
+    SELECT DISTINCT a.customer_id as customer_id
+    FROM Orders a, Orders b, Orders c
+    WHERE ( a.customer_id=b.customer_id AND a.customer_id=c.customer_id )
+      AND a.product_name='A'
+      AND b.product_name='B'
+      AND c.product_name='C'
+), T2 AS(
+    SELECT DISTINCT a.customer_id as customer_id
+    FROM Orders a, Orders b
+   WHERE  a.customer_id=b.customer_id
+     AND a.product_name='A'
+     AND b.product_name='B'
+)
+SELECT T2.customer_id AS customer_ID, customer_name
+ FROM T2 JOIN Customers ON T2.customer_id=Customers.customer_id
+ WHERE T2.customer_id NOT IN (SELECT customer_id FROM T1)
+
+## Method2
+SELECT DISTINCT O.customer_id, C.customer_name
+FROM Orders O
+LEFT JOIN customers C ON O.customer_id = C.customer_id
+WHERE 
+    C.customer_id IN (SELECT customer_id FROM orders WHERE product_name = 'A') AND
+    C.customer_id IN (SELECT customer_id FROM orders WHERE product_name = 'B') AND
+    C.customer_id NOT IN (SELECT customer_id FROM orders WHERE product_name = 'C')
+
+## Method3
+SELECT
+    CUSTOMER_ID,
+    CUSTOMER_NAME
+FROM
+    (
+        SELECT
+            C.CUSTOMER_ID,
+            CUSTOMER_NAME,
+            SUM(CASE WHEN PRODUCT_NAME = 'A' THEN 1 ELSE 0 END) BOUGHT_A,
+            SUM(CASE WHEN PRODUCT_NAME = 'B' THEN 1 ELSE 0 END) BOUGHT_B,
+            SUM(CASE WHEN PRODUCT_NAME = 'C' THEN 1 ELSE 0 END) BOUGHT_C
+        FROM
+            ORDERS O
+            JOIN CUSTOMERS C ON (O.CUSTOMER_ID = C.CUSTOMER_ID)
+        GROUP BY
+            C.CUSTOMER_ID,
+            CUSTOMER_NAME
+    ) X
+WHERE
+    BOUGHT_A > 0 AND
+    BOUGHT_B > 0 AND
+    BOUGHT_C = 0
+
+--1445. Apples & Oranges
+
+SELECT t1.sale_date as sale_date, SUM(t1.sold_num) AS diff
+FROM (
+    SELECT sale_date, fruit, CASE WHEN fruit='oranges' THEN sold_num *(-1)
+                                                       ELSE sold_num END as sold_num
+    FROM Sales
+) t1
+GROUP BY t1.sale_date
+
+/*
+SELECT sale_date, SUM(CASE WHEN fruit ='apples' THEN sold_num ELSE -sold_num END) as diff
+FROM Sales
+Group by sale_date
+*/
+
+                            
+--1212. Team Scores in Football Tournament
+
+WITH T1 AS (
+SELECT match_id, host_team AS team,
+       CASE WHEN host_goals > guest_goals THEN 3 
+            WHEN host_goals = guest_goals THEN 1
+            ELSE 0 END AS score
+FROM Matches
+UNION
+SELECT match_id, guest_team AS team, 
+       CASE WHEN host_goals < guest_goals THEN 3 
+            WHEN host_goals = guest_goals THEN 1
+            ELSE 0 END AS score
+FROM Matches
+)
+SELECT team_id, team_name, IFNULL(SUM(score),0) AS num_points
+FROM T1 RIGHT JOIN Teams ON T1.team=Teams.team_id
+GROUP BY team_name
+ORDER BY num_points DESC,team_id ASC
+
+
+--1341. Movie Rating
+
+(SELECT user_name AS results
+FROM (
+    SELECT Users.name AS user_name, COUNT(*) AS Rate_time
+    FROM Movie_Rating t1 LEFT JOIN users ON t1.user_id=Users.user_id
+    GROUP BY user_name
+    ORDER BY Rate_time DESC,user_name ASC
+) t2
+LIMIT 1)
+UNION
+(SELECT movie_title AS result
+FROM (
+    SELECT Movies.title AS movie_title, ROUND(AVG(rating),2) AS Rating_score
+    FROM Movie_Rating t3 JOIN Movies ON t3.movie_id=Movies.movie_id
+    WHERE DATEDIFF(created_at, "2020-02-01") between 0 and 28
+    GROUP BY movie_title
+    ORDER BY Rating_score DESC, movie_title ASC
+) t4
+LIMIT 1)
+
+
+--1112. Highest Grade For Each Student
+
+SELECT student_id, course_id, grade
+FROM (
+    SELECT *, 
+          ROW_NUMBER() OVER(PARTITION BY student_id ORDER BY grade DESC, course_id ASC) as rk
+    FROM Enrollments
+) T1
+WHERE rk=1
+
+
+--1045. Customers Who Bought All Products
+
+SELECT customer_id
+FROM Customer 
+GROUP BY customer_id
+HAVING COUNT(DISTINCT product_key) = (
+    SELECT COUNT(DISTINCT product_key)
+      FROM Product)
+
+
+--574. Winning Candidate
+
+SELECT Name
+FROM (
+    SELECT Name, COUNT(*)OVER(PARTITION BY Name) AS vote_ticket
+    FROM Vote LEFT JOIN Candidate ON Vote.CandidateId=Candidate.id
+    ORDER BY vote_ticket DESC
+) t1
+LIMIT 1
+
+
+--602. Friend Requests II: Who Has the Most Friends
+
+With t2 AS(
+    SELECT id 
+    FROM (
+        SELECT ROW_NUMBER()OVER()AS id
+        FROM request_accepted
+    ) t1
+    WHERE id<=(SELECT GREATEST(MAX(requester_id), MAX(accepter_id)) 
+               FROM request_accepted)
+),
+t3 AS(
+    SELECT DISTINCT requester_id AS id , COUNT(*)OVER(PARTITION BY requester_id) AS num
+    FROM request_accepted
+), 
+t4 AS(
+    SELECT DISTINCT accepter_id AS id, COUNT(*)OVER(PARTITION BY accepter_id) AS num
+    FROM request_accepted
+)
+SELECT t2.id as id, SUM(IFNULL(t3.num,0) + IFNULL(t4.num,0)) as num
+FROM t2 LEFT JOIN t3 ON t2.id=t3.id
+        LEFT JOIN t4 ON t2.id=t4.id
+GROUP BY id
+ORDER BY num DESC
+LIMIT 1
+
+/*here we can use union all, then coding will be simpler*/
+SELECT id, SUM(num) AS num
+FROM(
+    SELECT DISTINCT requester_id AS id , COUNT(*)OVER(PARTITION BY requester_id) AS num
+    FROM request_accepted
+    UNION ALL
+    SELECT DISTINCT accepter_id AS id, COUNT(*)OVER(PARTITION BY accepter_id) AS num
+    FROM request_accepted
+) T1
+GROUP BY id
+ORDER BY num DESC
+LIMIT 1
+
+
+--534. Game Play Analysis III
+--Method 1
+SELECT a.player_id AS player_id, a.event_date AS event_date,
+       (SELECT SUM(games_played)
+       FROM Activity b
+       WHERE b.player_id=a.player_id
+       AND a.event_date>=b.event_date) as games_played_so_far
+FROM Activity a
+
+--Method2
+select player_id,event_date,
+	sum(games_played) over(partition by player_id order by event_date) as games_played_so_far 
+from Activity
+order by player_id,event_date;
